@@ -71,6 +71,7 @@ model TeamMember {
 
 model Match {
   id             String          @id @default(cuid())
+  label          String?
   teamAId        String
   teamBId        String
   teamA          Team            @relation("TeamA", fields: [teamAId], references: [id])

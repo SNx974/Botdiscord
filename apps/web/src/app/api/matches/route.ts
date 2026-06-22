@@ -20,6 +20,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const teamAId = String(body.teamAId ?? "");
   const teamBId = String(body.teamBId ?? "");
+  const label = typeof body.label === "string" && body.label.trim() ? body.label.trim().slice(0, 32) : null;
   if (!teamAId || !teamBId || teamAId === teamBId) {
     return NextResponse.json({ error: "two_distinct_teams_required" }, { status: 400 });
   }
@@ -30,12 +31,13 @@ export async function POST(req: Request) {
   ]);
 
   const match = await prisma.match.create({
-    data: { teamAId, teamBId, status: MatchStatus.PENDING },
+    data: { teamAId, teamBId, label, status: MatchStatus.PENDING },
   });
 
   try {
     const channel = await createMatchChannel({
       matchId: match.id,
+      label: match.label,
       teamA: {
         id: teamA.id,
         name: teamA.name,

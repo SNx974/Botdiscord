@@ -37,9 +37,10 @@ export async function createMatchChannel(
 ): Promise<CreateMatchChannelResponse> {
   const guild: Guild = await discordClient.guilds.fetch(env.DISCORD_GUILD_ID);
 
+  const suffix = req.label?.trim() ? sanitize(req.label) : req.matchId.slice(0, 6);
   const channelName = `match-${sanitize(req.teamA.tag ?? req.teamA.name)}-vs-${sanitize(
     req.teamB.tag ?? req.teamB.name
-  )}-${req.matchId.slice(0, 6)}`;
+  )}-${suffix}`;
 
   const channel = await guild.channels.create({
     name: channelName,

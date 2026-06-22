@@ -12,6 +12,7 @@ export function CreateMatchForm({ teams }: { teams: TeamOption[] }) {
   const router = useRouter();
   const [teamAId, setTeamAId] = useState("");
   const [teamBId, setTeamBId] = useState("");
+  const [label, setLabel] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +24,7 @@ export function CreateMatchForm({ teams }: { teams: TeamOption[] }) {
     const res = await fetch("/api/matches", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ teamAId, teamBId }),
+      body: JSON.stringify({ teamAId, teamBId, label: label.trim() || undefined }),
     });
 
     setLoading(false);
@@ -72,6 +73,15 @@ export function CreateMatchForm({ teams }: { teams: TeamOption[] }) {
             </option>
           ))}
         </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm text-slate-400">Nom du salon (optionnel)</label>
+        <input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="ex: finale-bo3"
+          className="rounded border border-slate-700 bg-slate-900 px-2 py-1.5"
+        />
       </div>
       <button
         disabled={loading}

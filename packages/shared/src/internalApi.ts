@@ -7,6 +7,8 @@ export interface RosterMember {
 
 export interface CreateMatchChannelRequest {
   matchId: string;
+  /** Custom suffix for the channel name (e.g. "finale-bo3") — falls back to the matchId if omitted. */
+  label?: string | null;
   teamA: { id: string; name: string; tag: string | null; members: RosterMember[] };
   teamB: { id: string; name: string; tag: string | null; members: RosterMember[] };
 }
