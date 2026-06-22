@@ -9,7 +9,7 @@ Monorepo npm workspaces, 4 services indépendants + 2 packages partagés :
 - `apps/web` — Next.js 14 (dashboard, création de matchs, chat live, validation), NextAuth (Discord OAuth)
 - `apps/bot` — Discord.js : création de salons, relais des messages, détection de screenshot, validation par réaction
 - `apps/realtime` — Socket.io + relais Redis pub/sub entre Discord et les clients web
-- `apps/worker` — Worker BullMQ : OCR sur les screenshots (Google Cloud Vision ou GPT-4o vision selon `OCR_PROVIDER`), extraction du score
+- `apps/worker` — Worker BullMQ : OCR sur les screenshots (Google Cloud Vision, GPT-4o ou Gemini vision selon `OCR_PROVIDER`), extraction du score
 - `packages/db` — Schéma Prisma (PostgreSQL) + client partagé
 - `packages/shared` — Types/contrats partagés (événements Socket.io, canaux Redis, jobs BullMQ, API interne)
 
@@ -47,7 +47,7 @@ npm run dev:worker     # worker OCR (BullMQ)
 
 1. Un admin crée un match sur le web (`/`) en choisissant deux équipes → `POST /api/matches` crée la ligne `Match`, appelle l'API interne du bot qui crée le salon Discord, les permissions par joueur et un webhook de relais.
 2. Le salon Discord et la page `/matches/[id]` sont synchronisés en temps réel via `apps/realtime` (Socket.io ↔ Redis pub/sub), dans les deux sens.
-3. Un joueur poste un screenshot (Discord ou bouton 📸 sur le web) → un job BullMQ `ocr-scan` est créé → `apps/worker` scanne (Google Vision + regex, ou GPT-4o vision selon `OCR_PROVIDER`), extrait le score, crée un `MatchResult` et publie le résultat.
+3. Un joueur poste un screenshot (Discord ou bouton 📸 sur le web) → un job BullMQ `ocr-scan` est créé → `apps/worker` scanne (Google Vision + regex, GPT-4o ou Gemini vision selon `OCR_PROVIDER`), extrait le score, crée un `MatchResult` et publie le résultat.
 4. Le bot poste un embed avec réactions ✅/❌ dans le salon ; le web affiche les mêmes boutons. Chaque équipe doit valider (`ResultValidation`, contrainte unique par équipe). Accord mutuel → match `COMPLETED`. Désaccord → `DISPUTED` + ping du rôle admin.
 
 ## Déploiement (Dokploy)
@@ -62,7 +62,7 @@ Le repo est prêt pour un déploiement **Docker Compose** sur Dokploy : `docker-
    - `API_PORT` (ex: `4000`) = port interne commun à `bot` et `realtime` ; `BOT_INTERNAL_URL`/`REALTIME_URL` en dérivent automatiquement dans le compose (`http://bot:${API_PORT}`, `http://realtime:${API_PORT}`), pas besoin de les définir toi-même.
    - `NEXT_PUBLIC_REALTIME_URL` et `NEXTAUTH_URL` doivent être les **domaines publics** exposés par Dokploy (le navigateur s'y connecte directement) — pas les hostnames internes.
    - `NEXT_PUBLIC_REALTIME_URL` est aussi un **build arg** Docker (`apps/web/Dockerfile`) car Next.js l'inline dans le bundle client à la compilation : si tu le changes, il faut redéployer (rebuild), pas juste redémarrer le conteneur.
-   - `OCR_PROVIDER=gpt4o` + `OPENAI_API_KEY` pour utiliser GPT-4o vision (pas besoin de clé Google) ; `OCR_PROVIDER=vision` + `GOOGLE_APPLICATION_CREDENTIALS` pour Google Cloud Vision.
+   - `OCR_PROVIDER=gpt4o` + `OPENAI_API_KEY`, ou `OCR_PROVIDER=gemini` + `GEMINI_API_KEY` (clé gratuite sur https://aistudio.google.com/apikey, pas besoin de compte GCP/facturation) — les deux lisent le score directement sur l'image, pas besoin de clé Google Vision. `OCR_PROVIDER=vision` + `GOOGLE_APPLICATION_CREDENTIALS` pour Google Cloud Vision (OCR brut + regex).
    - `S3_ENDPOINT=http://minio:9000` (hostname interne du service `minio` bundlé) ; `S3_PUBLIC_URL=http://<ton-domaine-ou-IP>:9000/<S3_BUCKET>` (le port 9000 doit être ouvert publiquement — c'est fait via `ports: "9000:9000"` dans le compose, pas besoin de domaine Dokploy pour ça). Le bucket est créé et rendu public automatiquement au premier déploiement par le service `minio-init`.
 4. Exposer/domainer dans Dokploy : `web` (port 3000) et `realtime` (port `API_PORT`, ex: 4000) en HTTPS public. `bot` doit rester interne (pas de domaine public). `minio` n'a pas besoin de domaine Dokploy non plus, son port 9000 est déjà publié directement.
 5. Clé Google Vision (si `OCR_PROVIDER=vision`) : monter le fichier JSON via l'onglet *Mounts* du service `worker` sur `/run/secrets/gcp-vision-key.json`.

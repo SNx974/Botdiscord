@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { env } from "../env.js";
+import { SCORE_SYSTEM_PROMPT, parseScoreJson, type VisionScoreResult } from "./scoreSchema.js";
 
 let client: OpenAI | null = null;
 
@@ -8,30 +9,16 @@ function getClient() {
   return client;
 }
 
-export interface Gpt4oScoreResult {
-  scoreA: number | null;
-  scoreB: number | null;
-  confidence: "high" | "low" | "unparsed";
-  raw: unknown;
-}
-
-const SYSTEM_PROMPT =
-  'Tu analyses un screenshot de fin de partie e-sport. Réponds uniquement en JSON strict: ' +
-  '{"scoreA": number|null, "scoreB": number|null, "confidence": "high"|"low"|"unparsed"}. ' +
-  "scoreA est le score de l'équipe affichée en premier/à gauche, scoreB celui de l'équipe à droite. " +
-  'Mets confidence à "high" si le score est affiché sans ambiguïté, "low" si tu dois deviner, ' +
-  '"unparsed" (avec scoreA/scoreB à null) si aucun score n\'est lisible.';
-
 /**
  * Asks GPT-4o to read the score directly off the screenshot instead of
  * running raw OCR + regex — more robust across wildly different game UIs.
  */
-export async function scanScoreWithGpt4o(imageUrl: string): Promise<Gpt4oScoreResult> {
+export async function scanScoreWithGpt4o(imageUrl: string): Promise<VisionScoreResult> {
   const completion = await getClient().chat.completions.create({
     model: "gpt-4o",
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: SCORE_SYSTEM_PROMPT },
       {
         role: "user",
         content: [
@@ -43,20 +30,5 @@ export async function scanScoreWithGpt4o(imageUrl: string): Promise<Gpt4oScoreRe
   });
 
   const raw = completion.choices[0]?.message?.content ?? "{}";
-
-  try {
-    const parsed = JSON.parse(raw);
-    const confidence =
-      parsed.confidence === "high" || parsed.confidence === "low" || parsed.confidence === "unparsed"
-        ? parsed.confidence
-        : "unparsed";
-    return {
-      scoreA: typeof parsed.scoreA === "number" ? parsed.scoreA : null,
-      scoreB: typeof parsed.scoreB === "number" ? parsed.scoreB : null,
-      confidence,
-      raw: completion,
-    };
-  } catch {
-    return { scoreA: null, scoreB: null, confidence: "unparsed", raw: completion };
-  }
+  return { ...parseScoreJson(raw), raw: completion };
 }

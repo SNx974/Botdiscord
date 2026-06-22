@@ -4,19 +4,17 @@ import { ocrResultChannel, type OcrScanJob, type OcrScanResult } from "@akd/shar
 import { detectText } from "./ocr/visionClient.js";
 import { parseScore } from "./ocr/scoreParser.js";
 import { scanScoreWithGpt4o } from "./ocr/openaiVisionClient.js";
+import { scanScoreWithGemini } from "./ocr/geminiVisionClient.js";
+import type { VisionScoreResult } from "./ocr/scoreSchema.js";
 import { redisPub } from "./lib/redis.js";
 import { env } from "./env.js";
 
-interface ExtractedScore {
-  scoreA: number | null;
-  scoreB: number | null;
-  confidence: "high" | "low" | "unparsed";
-  raw: unknown;
-}
-
-async function extractScore(imageUrl: string): Promise<ExtractedScore> {
+async function extractScore(imageUrl: string): Promise<VisionScoreResult> {
   if (env.OCR_PROVIDER === "gpt4o") {
     return scanScoreWithGpt4o(imageUrl);
+  }
+  if (env.OCR_PROVIDER === "gemini") {
+    return scanScoreWithGemini(imageUrl);
   }
   const { text, raw } = await detectText(imageUrl);
   return { ...parseScore(text), raw };
