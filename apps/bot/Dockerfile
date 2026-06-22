@@ -4,7 +4,7 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 FROM base AS builder
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json tsconfig.base.json ./
 COPY apps/bot/package.json apps/bot/package.json
 COPY apps/realtime/package.json apps/realtime/package.json
 COPY apps/worker/package.json apps/worker/package.json
