@@ -1,0 +1,13 @@
+node_modules/
+.next/
+dist/
+build/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+.DS_Store
+Thumbs.db
+packages/db/generated/
+prisma/dev.db

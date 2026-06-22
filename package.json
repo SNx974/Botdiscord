@@ -1,0 +1,24 @@
+{
+  "name": "matchmaking-akd",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:bot": "npm run dev --workspace=apps/bot",
+    "dev:realtime": "npm run dev --workspace=apps/realtime",
+    "dev:worker": "npm run dev --workspace=apps/worker",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "npm run generate --workspace=packages/db",
+    "db:push": "npm run push --workspace=packages/db",
+    "db:migrate": "npm run migrate --workspace=packages/db",
+    "db:studio": "npm run studio --workspace=packages/db"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

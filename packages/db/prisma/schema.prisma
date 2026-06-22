@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CAPTAIN
+  PLAYER
+}
+
+enum MatchStatus {
+  PENDING
+  ACTIVE
+  AWAITING_VALIDATION
+  DISPUTED
+  COMPLETED
+  CANCELLED
+}
+
+enum ValidationStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+enum MessageSource {
+  WEB
+  DISCORD
+}
+
+model User {
+  id          String   @id @default(cuid())
+  discordId   String?  @unique
+  username    String
+  email       String?  @unique
+  avatarUrl   String?
+  role        Role     @default(PLAYER)
+  teamMembers TeamMember[]
+  validations ResultValidation[]
+  messages    Message[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  tag       String?
+  members   TeamMember[]
+  matchesA  Match[]      @relation("TeamA")
+  matchesB  Match[]      @relation("TeamB")
+  wins      Match[]      @relation("Winner")
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model TeamMember {
+  id     String @id @default(cuid())
+  teamId String
+  userId String
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model Match {
+  id             String          @id @default(cuid())
+  teamAId        String
+  teamBId        String
+  teamA          Team            @relation("TeamA", fields: [teamAId], references: [id])
+  teamB          Team            @relation("TeamB", fields: [teamBId], references: [id])
+  status         MatchStatus     @default(PENDING)
+  winnerId       String?
+  winner         Team?           @relation("Winner", fields: [winnerId], references: [id])
+  scoreA         Int?
+  scoreB         Int?
+  discordChannel DiscordChannel?
+  results        MatchResult[]
+  messages       Message[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([status])
+}
+
+model DiscordChannel {
+  id         String   @id @default(cuid())
+  matchId    String   @unique
+  match      Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  channelId  String   @unique
+  webhookId  String?
+  webhookUrl String?
+  guildId    String
+  createdAt  DateTime @default(now())
+}
+
+model Message {
+  id            String        @id @default(cuid())
+  matchId       String
+  match         Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  authorId      String?
+  author        User?         @relation(fields: [authorId], references: [id])
+  source        MessageSource
+  discordMsgId  String?       @unique
+  content       String
+  attachmentUrl String?
+  createdAt     DateTime      @default(now())
+
+  @@index([matchId, createdAt])
+}
+
+model MatchResult {
+  id               String             @id @default(cuid())
+  matchId          String
+  match            Match              @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  screenshotUrl    String
+  ocrRawData       Json?
+  extractedScoreA  Int?
+  extractedScoreB  Int?
+  presumedWinnerId String?
+  announcementMsgId String?           @unique
+  validations      ResultValidation[]
+  createdAt        DateTime           @default(now())
+
+  @@index([matchId])
+}
+
+model ResultValidation {
+  id        String            @id @default(cuid())
+  resultId  String
+  result    MatchResult       @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  teamId    String
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  status    ValidationStatus  @default(PENDING)
+  source    MessageSource
+  createdAt DateTime          @default(now())
+
+  @@unique([resultId, teamId])
+}

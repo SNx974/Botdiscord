@@ -1,0 +1,73 @@
+import {
+  ChannelType,
+  PermissionsBitField,
+  type Guild,
+} from "discord.js";
+import type { CreateMatchChannelRequest, CreateMatchChannelResponse } from "@akd/shared";
+import { discordClient } from "../lib/discordClient.js";
+import { env } from "../env.js";
+
+function teamOverwrites(team: CreateMatchChannelRequest["teamA"]) {
+  return team.members
+    .filter((m) => m.discordId)
+    .map((m) => ({
+      id: m.discordId,
+      allow: [
+        PermissionsBitField.Flags.ViewChannel,
+        PermissionsBitField.Flags.SendMessages,
+        PermissionsBitField.Flags.AttachFiles,
+        PermissionsBitField.Flags.AddReactions,
+        PermissionsBitField.Flags.ReadMessageHistory,
+      ],
+    }));
+}
+
+function sanitize(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/-+/g, "-").slice(0, 20);
+}
+
+export async function createMatchChannel(
+  req: CreateMatchChannelRequest
+): Promise<CreateMatchChannelResponse> {
+  const guild: Guild = await discordClient.guilds.fetch(env.DISCORD_GUILD_ID);
+
+  const channelName = `match-${sanitize(req.teamA.tag ?? req.teamA.name)}-vs-${sanitize(
+    req.teamB.tag ?? req.teamB.name
+  )}-${req.matchId.slice(0, 6)}`;
+
+  const channel = await guild.channels.create({
+    name: channelName,
+    type: ChannelType.GuildText,
+    parent: env.DISCORD_MATCH_CATEGORY_ID,
+    topic: `Match ${req.matchId} — ${req.teamA.name} vs ${req.teamB.name}`,
+    permissionOverwrites: [
+      { id: guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+      {
+        id: env.DISCORD_ADMIN_ROLE_ID,
+        allow: [
+          PermissionsBitField.Flags.ViewChannel,
+          PermissionsBitField.Flags.ManageMessages,
+          PermissionsBitField.Flags.SendMessages,
+        ],
+      },
+      ...teamOverwrites(req.teamA),
+      ...teamOverwrites(req.teamB),
+    ],
+  });
+
+  const webhook = await channel.createWebhook({
+    name: "MatchSync",
+    reason: `Web <-> Discord relay for match ${req.matchId}`,
+  });
+
+  await channel.send(
+    `🎮 **${req.teamA.name}** vs **${req.teamB.name}** — bon match ! Postez votre screenshot de fin de partie ici pour validation automatique du résultat.`
+  );
+
+  return {
+    channelId: channel.id,
+    guildId: guild.id,
+    webhookId: webhook.id,
+    webhookUrl: webhook.url,
+  };
+}
