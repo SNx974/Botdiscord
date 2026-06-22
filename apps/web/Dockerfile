@@ -40,6 +40,10 @@ RUN npm run build --workspace=apps/web
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
+# Next.js standalone's server.js defaults to binding "localhost" only, which
+# is unreachable from other containers (Traefik) on the Docker network —
+# must be forced to listen on all interfaces.
+ENV HOSTNAME=0.0.0.0
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
