@@ -1,7 +1,7 @@
 import express from "express";
 import { INTERNAL_API_KEY_HEADER, type CreateMatchChannelRequest } from "@akd/shared";
 import { env } from "../env.js";
-import { createMatchChannel } from "../services/channelManager.js";
+import { createMatchChannel, deleteMatchChannel } from "../services/channelManager.js";
 
 export function startHttpServer() {
   const app = express();
@@ -23,6 +23,16 @@ export function startHttpServer() {
     } catch (err) {
       console.error("Failed to create match channel", err);
       res.status(500).json({ error: "channel_creation_failed" });
+    }
+  });
+
+  app.delete("/internal/channels/:channelId", async (req, res) => {
+    try {
+      await deleteMatchChannel(req.params.channelId);
+      res.json({ ok: true });
+    } catch (err) {
+      console.error("Failed to delete match channel", err);
+      res.status(500).json({ error: "channel_deletion_failed" });
     }
   });
 

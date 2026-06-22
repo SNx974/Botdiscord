@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { CreateMatchForm } from "@/components/CreateMatchForm";
+import { DeleteMatchButton } from "@/components/DeleteMatchButton";
 
 export default async function DashboardPage() {
   const [matches, teams] = await Promise.all([
@@ -32,15 +33,16 @@ export default async function DashboardPage() {
         ) : (
           <ul className="space-y-2">
             {matches.map((m) => (
-              <li key={m.id}>
-                <Link
-                  href={`/matches/${m.id}`}
-                  className="block rounded border border-slate-800 p-3 hover:border-slate-600"
-                >
+              <li
+                key={m.id}
+                className="flex items-center justify-between gap-3 rounded border border-slate-800 p-3 hover:border-slate-600"
+              >
+                <Link href={`/matches/${m.id}`} className="flex-1">
                   <span className="font-medium">{m.teamA.name}</span> vs{" "}
                   <span className="font-medium">{m.teamB.name}</span>
                   <span className="ml-3 text-xs uppercase text-slate-400">{m.status}</span>
                 </Link>
+                <DeleteMatchButton matchId={m.id} />
               </li>
             ))}
           </ul>

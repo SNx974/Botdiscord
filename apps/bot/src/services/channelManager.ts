@@ -78,3 +78,9 @@ export async function createMatchChannel(
     webhookUrl: webhook.url,
   };
 }
+
+export async function deleteMatchChannel(channelId: string): Promise<void> {
+  const channel = await discordClient.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased() || !("delete" in channel)) return;
+  await channel.delete(`Match deleted from the dashboard`);
+}
