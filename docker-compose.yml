@@ -100,8 +100,10 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       S3_PUBLIC_URL: ${S3_PUBLIC_URL}
       S3_REGION: ${S3_REGION}
-    ports:
-      - "3000:3000"
+    # No host port mapping: route this through Dokploy's Domains tab instead
+    # (Service Name: web, Container Port: 3000) — Traefik reaches it over the
+    # compose network. A direct "3000:3000" binding conflicts with anything
+    # else on the host using that port.
 
 volumes:
   minio_data:
