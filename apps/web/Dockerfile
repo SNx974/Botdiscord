@@ -28,8 +28,9 @@ ENV NEXTAUTH_SECRET="placeholder-build-secret"
 ENV NEXTAUTH_URL="http://localhost:3000"
 ENV S3_ENDPOINT="http://placeholder:9000"
 ENV S3_BUCKET="placeholder"
-ENV S3_ACCESS_KEY_ID="placeholder"
-ENV S3_SECRET_ACCESS_KEY="placeholder"
+ENV S3_ACCESS_KEY="placeholder"
+ENV S3_SECRET_KEY="placeholder"
+ENV S3_PUBLIC_URL="http://placeholder:9000/placeholder"
 ENV S3_REGION="auto"
 
 RUN npm run build --workspace=packages/shared

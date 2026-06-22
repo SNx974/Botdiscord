@@ -6,8 +6,8 @@ const s3 = new S3Client({
   region: process.env.S3_REGION ?? "auto",
   forcePathStyle: true,
   credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.S3_ACCESS_KEY!,
+    secretAccessKey: process.env.S3_SECRET_KEY!,
   },
 });
 
@@ -25,5 +25,9 @@ export async function uploadScreenshot(buffer: Buffer, contentType: string): Pro
     })
   );
 
-  return `${process.env.S3_ENDPOINT}/${bucket}/${key}`;
+  // S3_PUBLIC_URL is the publicly reachable base (already includes the bucket
+  // path), since S3_ENDPOINT is only reachable inside the private network and
+  // Discord/the browser both need a real URL to fetch the image from.
+  const publicBase = process.env.S3_PUBLIC_URL ?? `${process.env.S3_ENDPOINT}/${bucket}`;
+  return `${publicBase}/${key}`;
 }

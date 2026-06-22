@@ -8,7 +8,7 @@ export function startHttpServer() {
   app.use(express.json());
 
   app.use((req, res, next) => {
-    if (req.headers[INTERNAL_API_KEY_HEADER] !== env.INTERNAL_API_KEY) {
+    if (req.headers[INTERNAL_API_KEY_HEADER] !== env.INTERNAL_API_SECRET) {
       res.status(401).json({ error: "unauthorized" });
       return;
     }

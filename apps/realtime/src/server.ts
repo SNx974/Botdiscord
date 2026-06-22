@@ -24,7 +24,7 @@ export function createServer() {
   // Lets other backend services (e.g. the web app's HTTP-only upload route,
   // which isn't a connected socket client) push an event into a match room.
   app.post("/internal/broadcast", (req, res) => {
-    if (req.headers[INTERNAL_API_KEY_HEADER] !== env.INTERNAL_API_KEY) {
+    if (req.headers[INTERNAL_API_KEY_HEADER] !== env.INTERNAL_API_SECRET) {
       res.status(401).json({ error: "unauthorized" });
       return;
     }

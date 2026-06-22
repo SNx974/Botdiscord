@@ -3,15 +3,31 @@ import { prisma, MatchStatus } from "@akd/db";
 import { ocrResultChannel, type OcrScanJob, type OcrScanResult } from "@akd/shared";
 import { detectText } from "./ocr/visionClient.js";
 import { parseScore } from "./ocr/scoreParser.js";
+import { scanScoreWithGpt4o } from "./ocr/openaiVisionClient.js";
 import { redisPub } from "./lib/redis.js";
+import { env } from "./env.js";
+
+interface ExtractedScore {
+  scoreA: number | null;
+  scoreB: number | null;
+  confidence: "high" | "low" | "unparsed";
+  raw: unknown;
+}
+
+async function extractScore(imageUrl: string): Promise<ExtractedScore> {
+  if (env.OCR_PROVIDER === "gpt4o") {
+    return scanScoreWithGpt4o(imageUrl);
+  }
+  const { text, raw } = await detectText(imageUrl);
+  return { ...parseScore(text), raw };
+}
 
 export async function processOcrScanJob(job: Job<OcrScanJob>): Promise<void> {
   const { matchId, screenshotUrl } = job.data;
 
   const match = await prisma.match.findUniqueOrThrow({ where: { id: matchId } });
 
-  const { text, raw } = await detectText(screenshotUrl);
-  const { scoreA, scoreB, confidence } = parseScore(text);
+  const { scoreA, scoreB, confidence, raw } = await extractScore(screenshotUrl);
 
   const presumedWinnerTeamId =
     scoreA !== null && scoreB !== null

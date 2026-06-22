@@ -7,7 +7,7 @@ export async function createMatchChannel(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      [INTERNAL_API_KEY_HEADER]: process.env.INTERNAL_API_KEY!,
+      [INTERNAL_API_KEY_HEADER]: process.env.INTERNAL_API_SECRET!,
     },
     body: JSON.stringify(payload),
   });

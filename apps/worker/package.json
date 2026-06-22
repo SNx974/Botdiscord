@@ -13,6 +13,7 @@
     "@akd/db": "*",
     "@akd/shared": "*",
     "@google-cloud/vision": "^4.3.2",
+    "openai": "^4.56.0",
     "bullmq": "^5.12.0",
     "ioredis": "^5.4.1",
     "dotenv": "^16.4.5",
