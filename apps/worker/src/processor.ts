@@ -25,20 +25,34 @@ async function extractScore(imageUrl: string): Promise<VisionScoreResult> {
 }
 
 export async function processOcrScanJob(job: Job<OcrScanJob>): Promise<void> {
-  const { matchId, screenshotUrl } = job.data;
+  const { matchId, screenshotUrl, submittedByUserId } = job.data;
 
-  const match = await prisma.match.findUniqueOrThrow({ where: { id: matchId } });
+  const match = await prisma.match.findUniqueOrThrow({
+    where: { id: matchId },
+    include: { teamA: { include: { members: true } }, teamB: { include: { members: true } } },
+  });
 
-  const { scoreA, scoreB, confidence, raw } = await extractScore(screenshotUrl);
+  const { scoreA, scoreB, confidence, submitterOutcome, raw } = await extractScore(screenshotUrl);
 
-  const presumedWinnerTeamId =
-    scoreA !== null && scoreB !== null
-      ? scoreA > scoreB
-        ? match.teamAId
-        : scoreA < scoreB
-          ? match.teamBId
-          : null
-      : null;
+  const submitterTeamId = submittedByUserId
+    ? match.teamA.members.some((m) => m.userId === submittedByUserId)
+      ? match.teamAId
+      : match.teamB.members.some((m) => m.userId === submittedByUserId)
+        ? match.teamBId
+        : null
+    : null;
+
+  // The end-of-game "DEFEAT"/"VICTORY" banner tells us directly which team
+  // won from the submitter's perspective — far more reliable than mapping
+  // raw numeric scores to a team, since neither team is labeled on screen.
+  let presumedWinnerTeamId: string | null = null;
+  if (submitterTeamId && submitterOutcome === "victory") {
+    presumedWinnerTeamId = submitterTeamId;
+  } else if (submitterTeamId && submitterOutcome === "defeat") {
+    presumedWinnerTeamId = submitterTeamId === match.teamAId ? match.teamBId : match.teamAId;
+  } else if (scoreA !== null && scoreB !== null && scoreA !== scoreB) {
+    presumedWinnerTeamId = scoreA > scoreB ? match.teamAId : match.teamBId;
+  }
 
   const result = await prisma.matchResult.create({
     data: {
