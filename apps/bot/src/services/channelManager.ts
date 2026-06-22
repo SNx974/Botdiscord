@@ -85,3 +85,23 @@ export async function deleteMatchChannel(channelId: string): Promise<void> {
   if (!channel || !channel.isTextBased() || !("delete" in channel)) return;
   await channel.delete(`Match deleted from the dashboard`);
 }
+
+/**
+ * Match completed: stop further discussion without deleting the channel
+ * (keeps history visible). Removes SendMessages/AddReactions for each
+ * player while leaving ViewChannel/ReadMessageHistory intact.
+ */
+export async function lockMatchChannel(channelId: string, memberDiscordIds: string[]): Promise<void> {
+  const channel = await discordClient.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased() || !("permissionOverwrites" in channel)) return;
+
+  for (const discordId of memberDiscordIds) {
+    await channel.permissionOverwrites
+      .edit(discordId, { SendMessages: false, AddReactions: false }, { type: OverwriteType.Member })
+      .catch(() => null);
+  }
+
+  if ("send" in channel) {
+    await channel.send("🔒 Match terminé et validé — ce salon est désormais en lecture seule.").catch(() => null);
+  }
+}

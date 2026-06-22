@@ -16,10 +16,12 @@ export function ChatWindow({
   matchId,
   currentUserId,
   initialMessages,
+  locked,
 }: {
   matchId: string;
   currentUserId: string | null;
   initialMessages: ChatMessage[];
+  locked: boolean;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -67,7 +69,7 @@ export function ChatWindow({
 
   function sendMessage(e: FormEvent) {
     e.preventDefault();
-    if (!input.trim() || !currentUserId || !socketRef.current) return;
+    if (locked || !input.trim() || !currentUserId || !socketRef.current) return;
     socketRef.current.emit("message:send", { matchId, userId: currentUserId, content: input });
     setInput("");
   }
@@ -75,7 +77,7 @@ export function ChatWindow({
   async function uploadScreenshot(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file || !currentUserId) return;
+    if (locked || !file || !currentUserId) return;
 
     const body = new FormData();
     body.append("file", file);
@@ -105,25 +107,31 @@ export function ChatWindow({
         ))}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={sendMessage} className="flex border-t border-slate-800">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={currentUserId ? "Écrire un message..." : "Connectez-vous pour écrire"}
-          disabled={!currentUserId}
-          className="flex-1 bg-slate-900 px-3 py-2 text-sm outline-none disabled:opacity-50"
-        />
-        <button
-          disabled={!currentUserId}
-          className="px-4 text-sm text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
-        >
-          Envoyer
-        </button>
-        <label className="flex cursor-pointer items-center px-3 text-sm text-slate-400 hover:text-slate-200">
-          📸
-          <input type="file" accept="image/*" onChange={uploadScreenshot} disabled={!currentUserId} hidden />
-        </label>
-      </form>
+      {locked ? (
+        <p className="border-t border-slate-800 px-3 py-2 text-center text-xs text-slate-500">
+          🔒 Match terminé — ce salon est en lecture seule.
+        </p>
+      ) : (
+        <form onSubmit={sendMessage} className="flex border-t border-slate-800">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={currentUserId ? "Écrire un message..." : "Connectez-vous pour écrire"}
+            disabled={!currentUserId}
+            className="flex-1 bg-slate-900 px-3 py-2 text-sm outline-none disabled:opacity-50"
+          />
+          <button
+            disabled={!currentUserId}
+            className="px-4 text-sm text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+          >
+            Envoyer
+          </button>
+          <label className="flex cursor-pointer items-center px-3 text-sm text-slate-400 hover:text-slate-200">
+            📸
+            <input type="file" accept="image/*" onChange={uploadScreenshot} disabled={!currentUserId} hidden />
+          </label>
+        </form>
+      )}
     </div>
   );
 }

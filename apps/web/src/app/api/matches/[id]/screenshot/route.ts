@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma, MessageSource } from "@akd/db";
+import { prisma, MessageSource, MatchStatus } from "@akd/db";
 import { webToDiscordChannel, type RelayedMessage } from "@akd/shared";
 import { uploadScreenshot } from "@/lib/storage";
 import { ocrQueue } from "@/lib/queue";
@@ -11,6 +11,11 @@ import { redisPub } from "@/lib/redis";
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const match = await prisma.match.findUniqueOrThrow({ where: { id: params.id } });
+  if (match.status === MatchStatus.COMPLETED) {
+    return NextResponse.json({ error: "match_completed" }, { status: 409 });
+  }
 
   const form = await req.formData();
   const file = form.get("file");

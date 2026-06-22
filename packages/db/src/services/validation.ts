@@ -61,3 +61,31 @@ export async function applyValidation(params: ApplyValidationParams): Promise<Va
 
   return { matchId: result.matchId, resultId, teamId, status, matchStatus };
 }
+
+export interface AdminResolveParams {
+  matchId: string;
+  resultId: string;
+  winnerTeamId: string;
+}
+
+/**
+ * Lets an admin close a match immediately, bypassing the two-team mutual
+ * consent flow — for when a team won't validate or the AI misread a result.
+ */
+export async function adminResolveMatch(params: AdminResolveParams): Promise<ValidationOutcome> {
+  const { matchId, resultId, winnerTeamId } = params;
+
+  const result = await prisma.matchResult.findUniqueOrThrow({ where: { id: resultId } });
+
+  await prisma.match.update({
+    where: { id: matchId },
+    data: {
+      status: MatchStatus.COMPLETED,
+      winnerId: winnerTeamId,
+      scoreA: result.extractedScoreA,
+      scoreB: result.extractedScoreB,
+    },
+  });
+
+  return { matchId, resultId, teamId: winnerTeamId, status: ValidationStatus.CONFIRMED, matchStatus: "COMPLETED" };
+}

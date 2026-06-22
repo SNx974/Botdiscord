@@ -5,12 +5,14 @@ import { registerMessageRelay } from "./listeners/messageRelay.js";
 import { registerWebToDiscordBridge } from "./listeners/webToDiscordBridge.js";
 import { registerOcrResultAnnouncer } from "./listeners/ocrResultAnnouncer.js";
 import { registerValidationReactions } from "./listeners/validationReactions.js";
+import { registerMatchLockListener } from "./listeners/matchLockListener.js";
 
 async function main() {
   registerMessageRelay();
   registerWebToDiscordBridge();
   registerOcrResultAnnouncer();
   registerValidationReactions();
+  registerMatchLockListener();
 
   discordClient.once("ready", (c) => {
     console.log(`[bot] logged in as ${c.user.tag}`);

@@ -1,5 +1,5 @@
 import type { Server, Socket } from "socket.io";
-import { prisma, MessageSource } from "@akd/db";
+import { prisma, MessageSource, MatchStatus } from "@akd/db";
 import {
   webToDiscordChannel,
   matchRoom,
@@ -21,6 +21,9 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
 
     socket.on("message:send", async ({ matchId, userId, content }) => {
       if (!content.trim()) return;
+
+      const match = await prisma.match.findUnique({ where: { id: matchId }, select: { status: true } });
+      if (!match || match.status === MatchStatus.COMPLETED) return;
 
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) return;
