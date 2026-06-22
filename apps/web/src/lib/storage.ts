@@ -21,7 +21,6 @@ export async function uploadScreenshot(buffer: Buffer, contentType: string): Pro
       Key: key,
       Body: buffer,
       ContentType: contentType,
-      ACL: "public-read",
     })
   );
 
