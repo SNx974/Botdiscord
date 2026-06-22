@@ -1,5 +1,6 @@
 import {
   ChannelType,
+  OverwriteType,
   PermissionsBitField,
   type Guild,
 } from "discord.js";
@@ -12,6 +13,11 @@ function teamOverwrites(team: CreateMatchChannelRequest["teamA"]) {
     .filter((m) => m.discordId)
     .map((m) => ({
       id: m.discordId,
+      // Without an explicit type, discord.js tries to resolve the id against
+      // its Role/GuildMember cache to guess which one it is — member caches
+      // aren't fully populated by default, so that guess fails even for real
+      // members ("Supplied parameter is not a cached User or Role").
+      type: OverwriteType.Member,
       allow: [
         PermissionsBitField.Flags.ViewChannel,
         PermissionsBitField.Flags.SendMessages,
@@ -41,9 +47,10 @@ export async function createMatchChannel(
     parent: env.DISCORD_MATCH_CATEGORY_ID,
     topic: `Match ${req.matchId} — ${req.teamA.name} vs ${req.teamB.name}`,
     permissionOverwrites: [
-      { id: guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+      { id: guild.roles.everyone, type: OverwriteType.Role, deny: [PermissionsBitField.Flags.ViewChannel] },
       {
         id: env.DISCORD_ADMIN_ROLE_ID,
+        type: OverwriteType.Role,
         allow: [
           PermissionsBitField.Flags.ViewChannel,
           PermissionsBitField.Flags.ManageMessages,
