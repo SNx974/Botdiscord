@@ -7,7 +7,7 @@ function sniffImageFormat(buffer: Buffer): string {
   return `unknown (first bytes: ${buffer.subarray(0, 16).toString("hex")})`;
 }
 
-export async function fetchImageAsBase64(imageUrl: string): Promise<{ data: string; mimeType: string }> {
+export async function fetchImageBuffer(imageUrl: string): Promise<{ buffer: Buffer; mimeType: string }> {
   const res = await fetch(imageUrl, {
     headers: { accept: "image/*", "user-agent": "Mozilla/5.0 (compatible; MatchmakingAKD-Worker/1.0)" },
   });
@@ -20,5 +20,10 @@ export async function fetchImageAsBase64(imageUrl: string): Promise<{ data: stri
     `[worker] downloaded screenshot: ${buffer.length} bytes, content-type=${mimeType}, sniffed=${sniffImageFormat(buffer)}`
   );
 
+  return { buffer, mimeType };
+}
+
+export async function fetchImageAsBase64(imageUrl: string): Promise<{ data: string; mimeType: string }> {
+  const { buffer, mimeType } = await fetchImageBuffer(imageUrl);
   return { data: buffer.toString("base64"), mimeType };
 }
