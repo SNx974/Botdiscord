@@ -1,20 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "../env.js";
 import { SCORE_SYSTEM_PROMPT, parseScoreJson, type VisionScoreResult } from "./scoreSchema.js";
+import { fetchImageAsBase64 } from "./imageFetch.js";
 
 let client: GoogleGenerativeAI | null = null;
 
 function getClient() {
   if (!client) client = new GoogleGenerativeAI(env.GEMINI_API_KEY!);
   return client;
-}
-
-async function fetchImageAsBase64(imageUrl: string): Promise<{ data: string; mimeType: string }> {
-  const res = await fetch(imageUrl);
-  if (!res.ok) throw new Error(`Failed to download screenshot: ${res.status} ${res.statusText}`);
-  const mimeType = res.headers.get("content-type") ?? "image/png";
-  const buffer = Buffer.from(await res.arrayBuffer());
-  return { data: buffer.toString("base64"), mimeType };
 }
 
 /**

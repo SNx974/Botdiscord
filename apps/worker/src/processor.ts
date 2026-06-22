@@ -5,6 +5,7 @@ import { detectText } from "./ocr/visionClient.js";
 import { parseScore } from "./ocr/scoreParser.js";
 import { scanScoreWithGpt4o } from "./ocr/openaiVisionClient.js";
 import { scanScoreWithGemini } from "./ocr/geminiVisionClient.js";
+import { scanScoreWithOllama } from "./ocr/ollamaVisionClient.js";
 import type { VisionScoreResult } from "./ocr/scoreSchema.js";
 import { redisPub } from "./lib/redis.js";
 import { env } from "./env.js";
@@ -15,6 +16,9 @@ async function extractScore(imageUrl: string): Promise<VisionScoreResult> {
   }
   if (env.OCR_PROVIDER === "gemini") {
     return scanScoreWithGemini(imageUrl);
+  }
+  if (env.OCR_PROVIDER === "ollama") {
+    return scanScoreWithOllama(imageUrl);
   }
   const { text, raw } = await detectText(imageUrl);
   return { ...parseScore(text), raw };

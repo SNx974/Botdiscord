@@ -3,9 +3,11 @@ import { z } from "zod";
 
 const schema = z.object({
   REDIS_URL: z.string().min(1),
-  OCR_PROVIDER: z.enum(["gpt4o", "gemini", "vision"]).default("vision"),
+  OCR_PROVIDER: z.enum(["gpt4o", "gemini", "ollama", "vision"]).default("vision"),
   OPENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
+  OLLAMA_BASE_URL: z.string().optional(),
+  OLLAMA_MODEL: z.string().default("moondream"),
 });
 
 export const env = schema.parse(process.env);
