@@ -9,6 +9,8 @@ const worker = new Worker<OcrScanJob>(OCR_SCAN_QUEUE, processOcrScanJob, {
 });
 
 worker.on("completed", (job) => console.log(`[worker] scan complete for match ${job.data.matchId}`));
-worker.on("failed", (job, err) => console.error(`[worker] scan failed for match ${job?.data.matchId}`, err));
+worker.on("failed", (job, err) =>
+  console.error(`[worker] scan failed for match ${job?.data.matchId} (url=${job?.data.screenshotUrl})`, err)
+);
 
 console.log("[worker] OCR worker started, waiting for jobs...");
